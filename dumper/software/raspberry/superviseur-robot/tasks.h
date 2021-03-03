@@ -149,6 +149,15 @@ private:
      */
     Message *ReadInQueue(RT_QUEUE *queue);
 
+    /**********************************************************************/
+    /* Todo                                                               */
+    /**********************************************************************/
+
+    // Battery method
+    void getBatteryLevel(void *arg);
+
+    
+
 };
 
 #endif // __TASKS_H__ 

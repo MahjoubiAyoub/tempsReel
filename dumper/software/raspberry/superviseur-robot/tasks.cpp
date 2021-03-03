@@ -415,3 +415,30 @@ Message *Tasks::ReadInQueue(RT_QUEUE *queue) {
     return msg;
 }
 
+// Battery method
+void Tasks::getBatteryLevel(void *arg) {
+    int rs;
+    cout << "Start " << __PRETTY_FUNCTION__ << endl << flush;
+    // Synchronization barrier (waiting that all tasks are starting)
+    rt_sem_p(&sem_barrier, TM_INFINITE);
+
+    // Pour la periode
+    rt_task_set_periodic(NULL, TM_NOW, 500000000);
+
+    while (true) {
+        rt_task_wait_period(NULL);
+        cout << "Battery level update";
+        rt_mutex_acquire(&mutex_robotStarted, TM_INFINITE);
+        rs = robotStarted;
+        rt_mutex_release(&mutex_robotStarted);
+
+        if (rs == 1) {
+            cout << "Get battery level update: " << endl;
+            Message *batteryLevel = SendToRobot(robot.GetBattery());
+            if ( batteryLevel -> CompareID(MESSAGE_ROBOT_BATTERY_LEVEL) && batteryLevel != NULL ) {
+                /* code */
+                cout << "Battery level answer: " << batteryLevel->ToString() << endl << flush;
+            }   
+        }
+    }
+}

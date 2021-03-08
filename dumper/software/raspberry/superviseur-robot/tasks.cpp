@@ -517,7 +517,7 @@ void Tasks::StartRobotTaskWD(void *arg) {
             robotStarted = 1;
             rt_mutex_release(&mutex_robotStarted);
         }
-        Tasks::PingRobotWD(msgSend);
+        PingRobotWD(msgSend);
     }
 }
 void Tasks::PingRobotWD(void *msgSend) {
@@ -533,7 +533,7 @@ void Tasks::PingRobotWD(void *msgSend) {
 
         cout << "Ping of superviseur to Robot (";
         rt_mutex_acquire(&mutex_robot, TM_INFINITE);
-        msgSend = robot.Write(MESSAGE_ROBOT_PING);
+        msgSend = robot.Write(robot.Ping());
         rt_mutex_release(&mutex_robot);
         cout << msgSend->GetID();
         cout << ")" << endl;

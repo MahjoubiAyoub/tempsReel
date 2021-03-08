@@ -517,10 +517,10 @@ void Tasks::StartRobotTaskWD(void *arg) {
             robotStarted = 1;
             rt_mutex_release(&mutex_robotStarted);
         }
-        Tasks::PingRobotWD();
+        Tasks::PingRobotWD(msgSend);
     }
 }
-void Tasks::PingRobotWD(void *arg) {
+void Tasks::PingRobotWD(void *msgSend) {
     cout << "Start PingRobot " << __PRETTY_FUNCTION__ << endl << flush;
     // Synchronization barrier (waiting that all tasks are starting)
     rt_sem_p(&sem_barrier, TM_INFINITE);
@@ -531,7 +531,7 @@ void Tasks::PingRobotWD(void *arg) {
     while (true) {
         rt_task_wait_period(NULL);
 
-        cout << "Ping of superviseur to Robot ("
+        cout << "Ping of superviseur to Robot (";
         rt_mutex_acquire(&mutex_robot, TM_INFINITE);
         msgSend = robot.Write(MESSAGE_ROBOT_PING);
         rt_mutex_release(&mutex_robot);

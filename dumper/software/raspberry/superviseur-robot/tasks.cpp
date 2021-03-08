@@ -434,10 +434,12 @@ void Tasks::getBatteryLevel(void *arg) {
 
         if (rs == 1) {
             cout << "Get battery level update: " << endl;
-            Message *batteryLevel = robot.Write(robot.GetBattery());
-            if ( batteryLevel -> CompareID(MESSAGE_ROBOT_BATTERY_LEVEL) && batteryLevel != NULL ) {
+            Message *batteryLevel = Robot.Write(robot.GetBattery());
+            if ( batteryLevel -> CompareID(MESSAGE_ROBOT_BATTERY_LEVEL)) {
                 /* code */
                 cout << "Battery level answer: " << batteryLevel->ToString() << endl << flush;
+                // Vider les bufers et Envoyer au monitor
+                WriteInQueue(&q_messageToMon, batteryLevel);
             }   
         }
     }

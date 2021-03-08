@@ -26,6 +26,8 @@
 #define PRIORITY_TRECEIVEFROMMON 25
 #define PRIORITY_TSTARTROBOT 20
 #define PRIORITY_TCAMERA 21
+#define PRIORITY_TGETBATTERY 10
+
 
 /*
  * Some remarks:
@@ -123,6 +125,10 @@ void Tasks::Init() {
         cerr << "Error task create: " << strerror(-err) << endl << flush;
         exit(EXIT_FAILURE);
     }
+    if (err = rt_task_create(&th_getBatteryLevel, "th_getBatteryLevel", 0, PRIORITY_TGETBATTERY, 0)) {
+        cerr << "Error task create: " << strerror(-err) << endl << flush;
+        exit(EXIT_FAILURE);
+    }
     cout << "Tasks created successfully" << endl << flush;
 
     /**************************************************************************************/
@@ -164,6 +170,10 @@ void Tasks::Run() {
         exit(EXIT_FAILURE);
     }
     if (err = rt_task_start(&th_move, (void(*)(void*)) & Tasks::MoveTask, this)) {
+        cerr << "Error task start: " << strerror(-err) << endl << flush;
+        exit(EXIT_FAILURE);
+    }
+    if (err = rt_task_start(&th_getBatteryLevel, (void(*)(void*)) & Tasks::getBatteryLevel, this)) {
         cerr << "Error task start: " << strerror(-err) << endl << flush;
         exit(EXIT_FAILURE);
     }
@@ -434,7 +444,10 @@ void Tasks::getBatteryLevel(void *arg) {
 
         if (rs == 1) {
             cout << "Get battery level update: " << endl;
-            Message *batteryLevel = Robot.Write(robot.GetBattery());
+            rt_mutex_acquire(&mutex_robot, TM_INFINITE);
+            Message *batteryLevel = robot.Write(robot.GetBattery());
+            rt_mutex_release(&mutex_robot);
+            
             if ( batteryLevel -> CompareID(MESSAGE_ROBOT_BATTERY_LEVEL)) {
                 /* code */
                 cout << "Battery level answer: " << batteryLevel->ToString() << endl << flush;

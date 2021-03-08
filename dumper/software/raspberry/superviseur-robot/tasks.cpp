@@ -459,10 +459,14 @@ void Tasks::getBatteryLevel(void *arg) {
 
         if (rs == 1) {
             cout << "Get battery level update: " << endl;
+<<<<<<< HEAD
+            Message *batteryLevel = robot.Write(robot.GetBattery());
+=======
             rt_mutex_acquire(&mutex_robot, TM_INFINITE);
             Message *batteryLevel = robot.Write(robot.GetBattery());
             rt_mutex_release(&mutex_robot);
             
+>>>>>>> 0a0672ee762edadb0d6819b15d60d4744e765972
             if ( batteryLevel -> CompareID(MESSAGE_ROBOT_BATTERY_LEVEL)) {
                 /* code */
                 cout << "Battery level answer: " << batteryLevel->ToString() << endl << flush;

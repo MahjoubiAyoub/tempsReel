@@ -78,6 +78,7 @@ private:
     RT_TASK th_move;
     RT_TASK th_getBatteryLevel;
     RT_TASK th_startRobotWD;
+    RT_TASK th_pingRobot;
     
     /**********************************************************************/
     /* Mutex                                                              */
@@ -134,11 +135,7 @@ private:
      * @brief Thread handling control of the robot.
      */
     void MoveTask(void *arg);
-    
-    /**
-     * @brief Thread starting the communication with the robot with watchDog.
-     */
-    void StartRobotTaskWD(void *arg);
+
     
     /**********************************************************************/
     /* Queue services                                                     */
@@ -162,9 +159,13 @@ private:
     /**********************************************************************/
 
     // Battery method
-    void getBatteryLevel(void *arg);
-
+    void getBatteryLevel(void *arg);   
     
+    // Thread starting the communication with the robot with watchDog.
+    void StartRobotTaskWD(void *arg);
+
+    // PingRobot method
+    void PingRobotWD(void *arg);
 
 };
 

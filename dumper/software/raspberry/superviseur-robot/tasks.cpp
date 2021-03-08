@@ -129,11 +129,18 @@ void Tasks::Init() {
         cerr << "Error task create: " << strerror(-err) << endl << flush;
         exit(EXIT_FAILURE);
     }
+    // Thread for battery level
     if (err = rt_task_create(&th_getBatteryLevel, "th_getBatteryLevel", 0, PRIORITY_TGETBATTERY, 0)) {
         cerr << "Error task create: " << strerror(-err) << endl << flush;
         exit(EXIT_FAILURE);
     }
+    // Thread for WithWatchDog
     if (err = rt_task_create(&th_startRobotWD, "th_startRobotWD", 0, PRIORITY_TSTARTROBOT, 0)) {
+        cerr << "Error task create: " << strerror(-err) << endl << flush;
+        exit(EXIT_FAILURE);
+    }
+    // Thread for the ping
+    if (err = rt_task_create(&th_pingRobot, "th_pingRobot", 0, PRIORITY_TSTARTROBOT, 0)) {
         cerr << "Error task create: " << strerror(-err) << endl << flush;
         exit(EXIT_FAILURE);
     }
@@ -181,10 +188,17 @@ void Tasks::Run() {
         cerr << "Error task start: " << strerror(-err) << endl << flush;
         exit(EXIT_FAILURE);
     }
+    // Thread for the battery level
     if (err = rt_task_start(&th_getBatteryLevel, (void(*)(void*)) & Tasks::getBatteryLevel, this)) {
         cerr << "Error task start: " << strerror(-err) << endl << flush;
         exit(EXIT_FAILURE);
     }
+    // Thread for watchwithdog
+    if (err = rt_task_start(&th_startRobotWD, (void(*)(void*)) & Tasks::StartRobotTaskWD, this)) {
+        cerr << "Error task start: " << strerror(-err) << endl << flush;
+        exit(EXIT_FAILURE);
+    }
+    // Thread for the ping
     if (err = rt_task_start(&th_startRobotWD, (void(*)(void*)) & Tasks::StartRobotTaskWD, this)) {
         cerr << "Error task start: " << strerror(-err) << endl << flush;
         exit(EXIT_FAILURE);
@@ -459,14 +473,10 @@ void Tasks::getBatteryLevel(void *arg) {
 
         if (rs == 1) {
             cout << "Get battery level update: " << endl;
-<<<<<<< HEAD
-            Message *batteryLevel = robot.Write(robot.GetBattery());
-=======
             rt_mutex_acquire(&mutex_robot, TM_INFINITE);
             Message *batteryLevel = robot.Write(robot.GetBattery());
             rt_mutex_release(&mutex_robot);
             
->>>>>>> 0a0672ee762edadb0d6819b15d60d4744e765972
             if ( batteryLevel -> CompareID(MESSAGE_ROBOT_BATTERY_LEVEL)) {
                 /* code */
                 cout << "Battery level answer: " << batteryLevel->ToString() << endl << flush;
@@ -488,11 +498,10 @@ void Tasks::StartRobotTaskWD(void *arg) {
     /**************************************************************************************/
     /* The task startRobot starts here                                                    */
     /**************************************************************************************/
-    while (1) {
-        
+    while (1) { 
         Message * msgSend;
         rt_sem_p(&sem_startRobotWD, TM_INFINITE);
-        cout << "Start robot without watchdog (";
+        cout << "Start robot with watchdog (";
         
         rt_mutex_acquire(&mutex_robot, TM_INFINITE);
         msgSend = robot.Write(robot.StartWithWD());
@@ -508,5 +517,25 @@ void Tasks::StartRobotTaskWD(void *arg) {
             robotStarted = 1;
             rt_mutex_release(&mutex_robotStarted);
         }
+        Tasks::PingRobotWD();
+    }
+}
+void Tasks::PingRobotWD(void *arg) {
+    cout << "Start PingRobot " << __PRETTY_FUNCTION__ << endl << flush;
+    // Synchronization barrier (waiting that all tasks are starting)
+    rt_sem_p(&sem_barrier, TM_INFINITE);
+
+    // Pour la periode
+    rt_task_set_periodic(NULL, TM_NOW, 1000000000);
+    
+    while (true) {
+        rt_task_wait_period(NULL);
+
+        cout << "Ping of superviseur to Robot ("
+        rt_mutex_acquire(&mutex_robot, TM_INFINITE);
+        msgSend = robot.Write(MESSAGE_ROBOT_PING);
+        rt_mutex_release(&mutex_robot);
+        cout << msgSend->GetID();
+        cout << ")" << endl;
     }
 }

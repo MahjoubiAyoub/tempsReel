@@ -77,6 +77,7 @@ private:
     RT_TASK th_startRobot;
     RT_TASK th_move;
     RT_TASK th_getBatteryLevel;
+    RT_TASK th_startRobotWD;
     
     /**********************************************************************/
     /* Mutex                                                              */
@@ -93,6 +94,7 @@ private:
     RT_SEM sem_openComRobot;
     RT_SEM sem_serverOk;
     RT_SEM sem_startRobot;
+    RT_SEM sem_startRobotWD;
 
     /**********************************************************************/
     /* Message queues                                                     */
@@ -132,6 +134,11 @@ private:
      * @brief Thread handling control of the robot.
      */
     void MoveTask(void *arg);
+    
+    /**
+     * @brief Thread starting the communication with the robot with watchDog.
+     */
+    void StartRobotTaskWD(void *arg);
     
     /**********************************************************************/
     /* Queue services                                                     */

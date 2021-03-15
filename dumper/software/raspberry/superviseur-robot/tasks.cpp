@@ -314,7 +314,13 @@ void Tasks::ReceiveFromMonTask(void *arg) {
         } else if (msgRcv->CompareID(MESSAGE_ROBOT_START_WITH_WD)) {
             rt_sem_v(&sem_startRobotWD);
         } else if (msgRcv->CompareID(MESSAGE_CAM_OPEN)) {
-            Camera cam = Camera::Open();
+            // rt_sem_v(&sem_startRobot);
+            cam = new Camera(sm, 20);
+            if (cam->Open()) {
+                cout << "Cam opened successfully" << endl;
+            } else {
+                cout << "Failed to open cam" << endl;
+            }
 
         } else if (msgRcv->CompareID(MESSAGE_ROBOT_GO_FORWARD) ||
             msgRcv->CompareID(MESSAGE_ROBOT_GO_BACKWARD) ||
@@ -583,7 +589,7 @@ Message* Tasks::SendToRobot(Message *message) {
                 // Stop the watchdog task 
                 rt_task_set_periodic(&th_watchdog, TM_NOW, 0);
             } else
-                    compteur = 0;
+                compteur = 0;
         }
     rt_mutex_release(&mutex_robot);
 
@@ -591,6 +597,21 @@ Message* Tasks::SendToRobot(Message *message) {
 }
 
 // Camera
-void Tasks::OpenCam(void *) {
-    Img img = ;
+void Tasks::CameraTask(void *) {
+    Img * img = new Img(cam->Grab());
+
+    while(1) {
+        if (cam != 0){
+            // envoi image
+            rt_task_wait_period(NULL);
+
+            cout << "Image of superviseur to Robot (";
+            rt_mutex_acquire(&mutex_robot, TM_INFINITE);
+            img = robot.Write(robot.SendCommand());
+            rt_mutex_release(&mutex_robot);
+            cout << img->GetID();
+            cout << ")" << endl;
+
+        }
+    }
 }

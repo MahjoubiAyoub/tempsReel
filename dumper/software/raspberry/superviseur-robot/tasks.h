@@ -66,6 +66,7 @@ private:
     ComRobot robot;
     int robotStarted = 0;
     int move = MESSAGE_ROBOT_STOP;
+    Camera cam;
     
     /**********************************************************************/
     /* Tasks                                                              */
@@ -172,7 +173,7 @@ private:
     Message* Tasks::SendToRobot(Message *message);
 
     // Camera
-    void Tasks::OpenCam(void *);
+    void Tasks::CameraTask(void *);
 };
 
 #endif // __TASKS_H__ 

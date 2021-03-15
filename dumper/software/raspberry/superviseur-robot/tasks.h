@@ -170,10 +170,10 @@ private:
     void PingRobotWD(void *arg);
 
     // Send to Robot method
-    Message* Tasks::SendToRobot(Message *message);
+    Message* SendToRobot(Message *message);
 
     // Camera
-    void Tasks::CameraTask(void *);
+    void CameraTask(void *arg);
 };
 
 #endif // __TASKS_H__ 

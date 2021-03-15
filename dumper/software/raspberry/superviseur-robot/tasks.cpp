@@ -315,7 +315,7 @@ void Tasks::ReceiveFromMonTask(void *arg) {
             rt_sem_v(&sem_startRobotWD);
         } else if (msgRcv->CompareID(MESSAGE_CAM_OPEN)) {
             // rt_sem_v(&sem_startRobot);
-            cam = new Camera(sm, 20);
+            Camera *cam = new Camera(sm, 20);
             if (cam->Open()) {
                 cout << "Cam opened successfully" << endl;
             } else {
@@ -553,7 +553,6 @@ void Tasks::PingRobotWD(void *msgSend) {
         rt_mutex_acquire(&mutex_robot, TM_INFINITE);
         msgSend = robot.Write(robot.Ping());
         rt_mutex_release(&mutex_robot);
-        cout << msgSend->GetID();
         cout << ")" << endl;
 
         
@@ -587,7 +586,7 @@ Message* Tasks::SendToRobot(Message *message) {
                 rt_mutex_release(&mutex_robotStarted);
                 
                 // Stop the watchdog task 
-                rt_task_set_periodic(&th_watchdog, TM_NOW, 0);
+                rt_task_set_periodic(&th_startRobotWD, TM_NOW, 0);
             } else
                 compteur = 0;
         }
@@ -597,11 +596,11 @@ Message* Tasks::SendToRobot(Message *message) {
 }
 
 // Camera
-void Tasks::CameraTask(void *) {
-    Img * img = new Img(cam->Grab());
+void Tasks::CameraTask(void *arg) {
+    Img * img = new Img(cam.Grab());
 
     while(1) {
-        if (cam != 0){
+        if (cam != IsOpen()){
             // envoi image
             rt_task_wait_period(NULL);
 
@@ -609,7 +608,6 @@ void Tasks::CameraTask(void *) {
             rt_mutex_acquire(&mutex_robot, TM_INFINITE);
             img = robot.Write(robot.SendCommand());
             rt_mutex_release(&mutex_robot);
-            cout << img->GetID();
             cout << ")" << endl;
 
         }

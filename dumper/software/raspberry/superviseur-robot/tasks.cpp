@@ -537,5 +537,20 @@ void Tasks::PingRobotWD(void *msgSend) {
         rt_mutex_release(&mutex_robot);
         cout << msgSend->GetID();
         cout << ")" << endl;
+
+        
     }
+}
+
+// Verification des erreurs
+Message* Tasks::SendToRobot(Message *message) {
+    Message *messageReceive;
+
+    // Le compteur des erreurs
+    static int compteur = 0;
+
+    rt_mutex_acquire(&mutex_robot, TM_INFINITE);
+    msgSend = robot.Write(messageReceive->Copy());
+    
+
 }

@@ -171,6 +171,8 @@ private:
     // Send to Robot method
     Message* Tasks::SendToRobot(Message *message);
 
+    // Camera
+    void Tasks::OpenCam(void *);
 };
 
 #endif // __TASKS_H__ 

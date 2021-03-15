@@ -311,14 +311,16 @@ void Tasks::ReceiveFromMonTask(void *arg) {
             rt_sem_v(&sem_openComRobot);
         } else if (msgRcv->CompareID(MESSAGE_ROBOT_START_WITHOUT_WD)) {
             rt_sem_v(&sem_startRobot);
-        }else if (msgRcv->CompareID(MESSAGE_ROBOT_START_WITH_WD)) {
+        } else if (msgRcv->CompareID(MESSAGE_ROBOT_START_WITH_WD)) {
             rt_sem_v(&sem_startRobotWD);
-        }
-        else if (msgRcv->CompareID(MESSAGE_ROBOT_GO_FORWARD) ||
-                msgRcv->CompareID(MESSAGE_ROBOT_GO_BACKWARD) ||
-                msgRcv->CompareID(MESSAGE_ROBOT_GO_LEFT) ||
-                msgRcv->CompareID(MESSAGE_ROBOT_GO_RIGHT) ||
-                msgRcv->CompareID(MESSAGE_ROBOT_STOP)) {
+        } else if (msgRcv->CompareID(MESSAGE_CAM_OPEN)) {
+            Camera cam = Camera::Open();
+
+        } else if (msgRcv->CompareID(MESSAGE_ROBOT_GO_FORWARD) ||
+            msgRcv->CompareID(MESSAGE_ROBOT_GO_BACKWARD) ||
+            msgRcv->CompareID(MESSAGE_ROBOT_GO_LEFT) ||
+            msgRcv->CompareID(MESSAGE_ROBOT_GO_RIGHT) ||
+            msgRcv->CompareID(MESSAGE_ROBOT_STOP)) {
 
             rt_mutex_acquire(&mutex_move, TM_INFINITE);
             move = msgRcv->GetID();
@@ -562,10 +564,10 @@ Message* Tasks::SendToRobot(Message *message) {
     rt_mutex_acquire(&mutex_robot, TM_INFINITE);
     messageReceive = robot.Write(message->Copy());
     
-        if (msgRcv == NULL
-            || msgRcv->CompareID(MESSAGE_ANSWER_ROBOT_UNKNOWN_COMMAND)
-            || msgRcv->CompareID(MESSAGE_ANSWER_ROBOT_TIMEOUT) 
-            || msgRcv->CompareID(MESSAGE_ANSWER_COM_ERROR)) {
+        if (messageReceive == NULL
+            || messageReceive->CompareID(MESSAGE_ANSWER_ROBOT_UNKNOWN_COMMAND)
+            || messageReceive->CompareID(MESSAGE_ANSWER_ROBOT_TIMEOUT) 
+            || messageReceive->CompareID(MESSAGE_ANSWER_COM_ERROR)) {
 
             compteur++;
 
@@ -584,6 +586,11 @@ Message* Tasks::SendToRobot(Message *message) {
                     compteur = 0;
         }
     rt_mutex_release(&mutex_robot);
-    
+
     return messageReceive;
+}
+
+// Camera
+void Tasks::OpenCam(void *) {
+    Img img = ;
 }

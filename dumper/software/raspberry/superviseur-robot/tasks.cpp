@@ -209,7 +209,7 @@ void Tasks::Run() {
         exit(EXIT_FAILURE);
     }
     // Thread for the send to Robot  // Message* Tasks::SendToRobot(Message *message)
-    if (err = rt_task_start(&th_sendToRobot, (Message(*)(Message*)) & Tasks::SendToRobot, this)) {
+    if (err = rt_task_start(&th_sendToRobot, (void(*)(void*)) & Tasks::SendToRobot, this)) {
         cerr << "Error task start: " << strerror(-err) << endl << flush;
         exit(EXIT_FAILURE);
     }
@@ -315,7 +315,7 @@ void Tasks::ReceiveFromMonTask(void *arg) {
             rt_sem_v(&sem_startRobotWD);
         } else if (msgRcv->CompareID(MESSAGE_CAM_OPEN)) {
             // rt_sem_v(&sem_startRobot);
-            Camera *cam = new Camera(sm, 20);
+            cam = new Camera(sm, 20);
             if (cam->Open()) {
                 cout << "Cam opened successfully" << endl;
             } else {
@@ -597,16 +597,16 @@ Message* Tasks::SendToRobot(Message *message) {
 
 // Camera
 void Tasks::CameraTask(void *arg) {
-    Img * img = new Img(cam.Grab());
+    Img * img = new Img(cam->Grab());
 
     while(1) {
-        if (cam != IsOpen()){
+        if (cam != NULL){
             // envoi image
             rt_task_wait_period(NULL);
 
             cout << "Image of superviseur to Robot (";
             rt_mutex_acquire(&mutex_robot, TM_INFINITE);
-            img = robot.Write(robot.SendCommand());
+            img = robot.Write(img);
             rt_mutex_release(&mutex_robot);
             cout << ")" << endl;
 

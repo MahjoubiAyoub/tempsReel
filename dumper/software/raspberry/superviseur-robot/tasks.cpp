@@ -144,6 +144,11 @@ void Tasks::Init() {
         cerr << "Error task create: " << strerror(-err) << endl << flush;
         exit(EXIT_FAILURE);
     }
+    // Thread for the send to Robot
+    if (err = rt_task_create(&th_sendToRobot, "th_sendToRobot", 0, PRIORITY_TSTARTROBOT, 0)) {
+        cerr << "Error task create: " << strerror(-err) << endl << flush;
+        exit(EXIT_FAILURE);
+    }
     cout << "Tasks created successfully" << endl << flush;
 
     /**************************************************************************************/
@@ -200,6 +205,11 @@ void Tasks::Run() {
     }
     // Thread for the ping
     if (err = rt_task_start(&th_startRobotWD, (void(*)(void*)) & Tasks::StartRobotTaskWD, this)) {
+        cerr << "Error task start: " << strerror(-err) << endl << flush;
+        exit(EXIT_FAILURE);
+    }
+    // Thread for the send to Robot  // Message* Tasks::SendToRobot(Message *message)
+    if (err = rt_task_start(&th_sendToRobot, (Message(*)(Message*)) & Tasks::SendToRobot, this)) {
         cerr << "Error task start: " << strerror(-err) << endl << flush;
         exit(EXIT_FAILURE);
     }
@@ -547,10 +557,33 @@ Message* Tasks::SendToRobot(Message *message) {
     Message *messageReceive;
 
     // Le compteur des erreurs
-    static int compteur = 0;
+    static int compteur = 1;
 
     rt_mutex_acquire(&mutex_robot, TM_INFINITE);
-    msgSend = robot.Write(messageReceive->Copy());
+    messageReceive = robot.Write(message->Copy());
     
+        if (msgRcv == NULL
+            || msgRcv->CompareID(MESSAGE_ANSWER_ROBOT_UNKNOWN_COMMAND)
+            || msgRcv->CompareID(MESSAGE_ANSWER_ROBOT_TIMEOUT) 
+            || msgRcv->CompareID(MESSAGE_ANSWER_COM_ERROR)) {
 
+            compteur++;
+
+            if (compteur > 3) {
+                compteur = 0;
+                // Send a notice to the monitor
+                WriteInQueue(&q_messageToMon, new Message(MESSAGE_ANSWER_COM_ERROR));
+                
+                rt_mutex_acquire(&mutex_robotStarted, TM_INFINITE);
+                robotStarted = 0;
+                rt_mutex_release(&mutex_robotStarted);
+                
+                // Stop the watchdog task 
+                rt_task_set_periodic(&th_watchdog, TM_NOW, 0);
+            } else
+                    compteur = 0;
+        }
+    rt_mutex_release(&mutex_robot);
+    
+    return messageReceive;
 }

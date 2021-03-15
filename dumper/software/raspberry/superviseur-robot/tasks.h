@@ -79,6 +79,7 @@ private:
     RT_TASK th_getBatteryLevel;
     RT_TASK th_startRobotWD;
     RT_TASK th_pingRobot;
+    RT_TASK th_sendToRobot;
     
     /**********************************************************************/
     /* Mutex                                                              */
@@ -166,6 +167,9 @@ private:
 
     // PingRobot method
     void PingRobotWD(void *arg);
+
+    // Send to Robot method
+    Message* Tasks::SendToRobot(Message *message);
 
 };
 

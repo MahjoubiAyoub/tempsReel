@@ -596,20 +596,33 @@ Message* Tasks::SendToRobot(Message *message) {
 }
 
 // Camera
-void Tasks::CameraTask(void *arg) {
+void Tasks::CameraTask(void *image) {
+
+    cout << "Start " << __PRETTY_FUNCTION__ << endl << flush;
+    // Synchronization barrier (waiting that all tasks are starting)
+    rt_sem_p(&sem_barrier, TM_INFINITE);
+    
+    /**************************************************************************************/
+    /* The task starts here                                                               */
+    /**************************************************************************************/
+
     Img * img = new Img(cam.Grab());
 
-    while(1) {
+    while(true) {
         if (cam != IsOpen()){
             // envoi image
             rt_task_wait_period(NULL);
 
-            cout << "Image of superviseur to Robot (";
-            rt_mutex_acquire(&mutex_robot, TM_INFINITE);
-            img = robot.Write(robot.SendCommand());
-            rt_mutex_release(&mutex_robot);
+            cout << "Image of superviseur to Monitor (";
+            rt_mutex_acquire(&mutex_monitor, TM_INFINITE);
+            img = robot.Write(image->Copy());
+            rt_mutex_release(&mutex_monitor);
             cout << ")" << endl;
 
+            /* code */
+            cout << "Battery level answer: " << img->ToString() << endl << flush;
+            // Vider les bufers et Envoyer au monitor
+            WriteInQueue(&q_messageToMon, img);
         }
     }
 }

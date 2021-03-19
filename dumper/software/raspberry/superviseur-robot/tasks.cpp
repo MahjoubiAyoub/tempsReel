@@ -209,7 +209,7 @@ void Tasks::Run() {
         exit(EXIT_FAILURE);
     }
     // Thread for the send to Robot  // Message* Tasks::SendToRobot(Message *message)
-    if (err = rt_task_start(&th_sendToRobot, (Message(*)(Message*)) & Tasks::SendToRobot, this)) {
+    if (err = rt_task_start(&th_sendToRobot, (void(*)(void*)) & Tasks::SendToRobot, this)) {
         cerr << "Error task start: " << strerror(-err) << endl << flush;
         exit(EXIT_FAILURE);
     }
@@ -315,7 +315,7 @@ void Tasks::ReceiveFromMonTask(void *arg) {
             rt_sem_v(&sem_startRobotWD);
         } else if (msgRcv->CompareID(MESSAGE_CAM_OPEN)) {
             // rt_sem_v(&sem_startRobot);
-            Camera *cam = new Camera(sm, 20);
+            cam = new Camera(sm, 20);
             if (cam->Open()) {
                 cout << "Cam opened successfully" << endl;
             } else {

@@ -615,7 +615,7 @@ void Tasks::CameraTask(void *image) {
 
             cout << "Image of superviseur to Monitor (";
             rt_mutex_acquire(&mutex_monitor, TM_INFINITE);
-            img = robot.Write(image->Copy());
+            img = monitor.Write(image->Copy());
             rt_mutex_release(&mutex_monitor);
             cout << ")" << endl;
 

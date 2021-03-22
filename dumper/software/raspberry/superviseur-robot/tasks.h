@@ -67,6 +67,7 @@ private:
     int robotStarted = 0;
     int move = MESSAGE_ROBOT_STOP;
     Camera *cam;
+    int sConnect = 0;
     
     /**********************************************************************/
     /* Tasks                                                              */

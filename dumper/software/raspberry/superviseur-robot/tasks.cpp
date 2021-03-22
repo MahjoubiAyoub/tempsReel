@@ -75,6 +75,15 @@ void Tasks::Init() {
         cerr << "Error mutex create: " << strerror(-err) << endl << flush;
         exit(EXIT_FAILURE);
     }
+    // Camera
+    if (err = rt_mutex_create(&mutex_camera, NULL)) {
+        cerr << "Error mutex create: " << strerror(-err) << endl << flush;
+        exit(EXIT_FAILURE);
+    }
+    if (err = rt_mutex_create(&mutex_cameraCmd, NULL)) {
+        cerr << "Error mutex create: " << strerror(-err) << endl << flush;
+        exit(EXIT_FAILURE);
+    }
     cout << "Mutexes created successfully" << endl << flush;
 
     /**************************************************************************************/
@@ -100,7 +109,13 @@ void Tasks::Init() {
         cerr << "Error semaphore create: " << strerror(-err) << endl << flush;
         exit(EXIT_FAILURE);
     }
+    // Sem ServerTAsk
     if (err = rt_sem_create(&sem_server, NULL, 1, S_FIFO)) {
+        cerr << "Error semaphore create: " << strerror(-err) << endl << flush;
+        exit(EXIT_FAILURE);
+    }
+    // Camera
+    if (err = rt_sem_create(&sem_camera, NULL, 0, S_FIFO)) {
         cerr << "Error semaphore create: " << strerror(-err) << endl << flush;
         exit(EXIT_FAILURE);
     }
@@ -145,6 +160,11 @@ void Tasks::Init() {
     }
     // Thread for the ping
     if (err = rt_task_create(&th_pingRobot, "th_pingRobot", 0, PRIORITY_TSTARTROBOT, 0)) {
+        cerr << "Error task create: " << strerror(-err) << endl << flush;
+        exit(EXIT_FAILURE);
+    }
+    // Camera
+    if (err = rt_task_create(&th_camera, "th_camera", 0, PRIORITY_TSTARTROBOT, 0)) {
         cerr << "Error task create: " << strerror(-err) << endl << flush;
         exit(EXIT_FAILURE);
     }
@@ -200,6 +220,11 @@ void Tasks::Run() {
     }
     // Thread for watchwithdog
     if (err = rt_task_start(&th_startRobotWD, (void(*)(void*)) & Tasks::StartRobotTaskWD, this)) {
+        cerr << "Error task start: " << strerror(-err) << endl << flush;
+        exit(EXIT_FAILURE);
+    }
+    // Camera
+    if (err = rt_task_start(&th_camera, (void(*)(void*)) & Tasks::CameraTask, this)) {
         cerr << "Error task start: " << strerror(-err) << endl << flush;
         exit(EXIT_FAILURE);
     }
@@ -561,37 +586,75 @@ Message* Tasks::SendToRobot(Message *message) {
 
     return messageReceive;
 }
-/*
+
 // Camera
-void Tasks::CameraTask(Message *image) {
+void Tasks::CameraTask(void *arg) {
 
     cout << "Start " << __PRETTY_FUNCTION__ << endl << flush;
     // Synchronization barrier (waiting that all tasks are starting)
     rt_sem_p(&sem_barrier, TM_INFINITE);
     
-
-
-    Img * img = new Img(cam->Grab());
-
+    Arena arene;
+    Position pos;
+    Message * msgAckSend;
+    MessagePosition * msgPosSend;
+    MessageImg * msgSend = new MessageImg();
+    ImageMat _dummy;
+    Img img(_dummy);
+    bool state = false;
+    int cp_cameraCmd;
+    rt_task_set_periodic(NULL, TM_NOW, 100000000);
+    
     while(true) {
-        if (cam != NULL){
-            // envoi image
-            rt_task_wait_period(NULL);
-
-            cout << "Image of superviseur to Monitor (";
-            rt_mutex_acquire(&mutex_monitor, TM_INFINITE);
-            img = monitor.Write(img->ToString());
-            rt_mutex_release(&mutex_monitor);
-            cout << ")" << endl;
-
+        
+        // envoi image
+        
+        rt_sem_p(&sem_camera, TM_INFINITE);
+        cout << "Image of superviseur to Monitor (";
+        rt_mutex_acquire(&mutex_camera, TM_INFINITE);
+        state = cam->Open();
+        rt_mutex_release(&mutex_camera);
+        //robot.Write(img->SendCommand(image));
             
-            cout << "Image answer: " << img->ToString() << endl << flush;
-            // Vider les bufers et Envoyer au monitor
-            WriteInQueue(&q_messageToMon, image);
+        if (state == true) {
+            cout << "The camera is open" << endl << flush;
+            while (cam->IsOpen()) {
+                rt_mutex_acquire(&mutex_cameraCmd, TM_INFINITE);
+                cp_cameraCmd = cameraCmd;
+                rt_mutex_release(&mutex_cameraCmd);
+                
+                if (cp_cameraCmd == MESSAGE_CAM_CLOSE) {
+                    cout << "The camera is closed" << endl << flush;
+                    cam->Close();
+                    msgAckSend = new Message(MESSAGE_ANSWER_ACK);
+                    WriteInQueue(&q_messageToMon, msgAckSend);
+                } else {
+                    rt_task_wait_period(NULL);
+                    
+                    cout << "Image tacking!!" << endl << flush;
+                    rt_mutex_acquire(&mutex_camera, TM_INFINITE);
+                    img = cam->Grab();
+                    rt_mutex_release(&mutex_camera);
+                    
+                    pos = img.SearchRobot(arene).front();
+                    if (pos.robotId != 0)
+                        img.DrawRobot(pos);
+                    else
+                        pos.center = cv::Point2f(-1.0,-1.0);
+                    
+                    msgPosSend = new MessagePosition(MESSAGE_CAM_POSITION, pos);
+                    WriteInQueue(&q_messageToMon, msgPosSend);
+                
+                cout << "Image answer: " << img.ToString() << endl << flush;
+                // Vider les bufers et Envoyer au monitor
+                msgSend->SetImage(&img);
+                msgSend->SetID(MESSAGE_CAM_IMAGE);
+                WriteInQueue(&q_messageToMon, msgSend);  
+                }
+            }
         }
     }
 }
-*/
 
 // 
 void Tasks::ServerTask(void *arg) {

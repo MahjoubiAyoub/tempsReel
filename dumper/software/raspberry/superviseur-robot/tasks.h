@@ -68,6 +68,7 @@ private:
     int move = MESSAGE_ROBOT_STOP;
     Camera *cam;
     int sConnect = 0;
+    int cameraCmd = MESSAGE_CAM_CLOSE;
     
     /**********************************************************************/
     /* Tasks                                                              */
@@ -80,7 +81,9 @@ private:
     RT_TASK th_move;
     RT_TASK th_getBatteryLevel;
     RT_TASK th_startRobotWD;
-    RT_TASK th_pingRobot;
+    RT_TASK th_pingRobot;    
+    RT_TASK th_camera;
+
     
     /**********************************************************************/
     /* Mutex                                                              */
@@ -88,7 +91,11 @@ private:
     RT_MUTEX mutex_monitor;
     RT_MUTEX mutex_robot;
     RT_MUTEX mutex_robotStarted;
-    RT_MUTEX mutex_move;
+    RT_MUTEX mutex_move;    
+    RT_MUTEX mutex_camera;    
+    RT_MUTEX mutex_cameraCmd;
+
+
 
     /**********************************************************************/
     /* Semaphores                                                         */
@@ -98,7 +105,9 @@ private:
     RT_SEM sem_serverOk;
     RT_SEM sem_startRobot;
     RT_SEM sem_startRobotWD;
-    RT_SEM sem_server;
+    RT_SEM sem_server;    
+    RT_SEM sem_camera;
+
 
     /**********************************************************************/
     /* Message queues                                                     */
@@ -174,7 +183,7 @@ private:
     Message* SendToRobot(Message *message);
 
     // Camera
-    //void CameraTask(Message *arg);
+    void CameraTask(void *arg);
 
     // ServerTask
     void ServerTask(void *arg);

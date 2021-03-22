@@ -98,6 +98,7 @@ private:
     RT_SEM sem_serverOk;
     RT_SEM sem_startRobot;
     RT_SEM sem_startRobotWD;
+    RT_SEM sem_server;
 
     /**********************************************************************/
     /* Message queues                                                     */
@@ -111,7 +112,7 @@ private:
     /**
      * @brief Thread handling server communication with the monitor.
      */
-    void ServerTask(void *arg);
+    //void ServerTask(void *arg);
      
     /**
      * @brief Thread sending data to monitor.

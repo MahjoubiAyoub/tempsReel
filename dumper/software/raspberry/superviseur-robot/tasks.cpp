@@ -100,6 +100,10 @@ void Tasks::Init() {
         cerr << "Error semaphore create: " << strerror(-err) << endl << flush;
         exit(EXIT_FAILURE);
     }
+    if (err = rt_sem_create(&sem_server, NULL, 1, S_FIFO)) {
+        cerr << "Error semaphore create: " << strerror(-err) << endl << flush;
+        exit(EXIT_FAILURE);
+    }
     cout << "Semaphores created successfully" << endl << flush;
 
     /**************************************************************************************/
@@ -199,10 +203,7 @@ void Tasks::Run() {
         cerr << "Error task start: " << strerror(-err) << endl << flush;
         exit(EXIT_FAILURE);
     }
-    if (err = rt_task_start(&th_startRobotWD, (void(*)(void*)) & Tasks::StartRobotTaskWD, this)) {
-        cerr << "Error task start: " << strerror(-err) << endl << flush;
-        exit(EXIT_FAILURE);
-    }
+
     cout << "Tasks launched" << endl << flush;
 }
 
@@ -220,33 +221,6 @@ void Tasks::Join() {
     cout << "Tasks synchronized" << endl << flush;
     rt_sem_broadcast(&sem_barrier);
     pause();
-}
-
-/**
- * @brief Thread handling server communication with the monitor.
- */
-void Tasks::ServerTask(void *arg) {
-    int status;
-    
-    cout << "Start " << __PRETTY_FUNCTION__ << endl << flush;
-    // Synchronization barrier (waiting that all tasks are started)
-    rt_sem_p(&sem_barrier, TM_INFINITE);
-
-    /**************************************************************************************/
-    /* The task server starts here                                                        */
-    /**************************************************************************************/
-    rt_mutex_acquire(&mutex_monitor, TM_INFINITE);
-    status = monitor.Open(SERVER_PORT);
-    rt_mutex_release(&mutex_monitor);
-
-    cout << "Open server on port " << (SERVER_PORT) << " (" << status << ")" << endl;
-
-    if (status < 0) throw std::runtime_error {
-        "Unable to start server on port " + std::to_string(SERVER_PORT)
-    };
-    monitor.AcceptClient(); // Wait the monitor client
-    cout << "Rock'n'Roll baby, client accepted!" << endl << flush;
-    rt_sem_broadcast(&sem_serverOk);
 }
 
 /**
@@ -621,7 +595,7 @@ void Tasks::CameraTask(Message *image) {
 
 // 
 void Tasks::ServerTask(void *arg) {
-    int statut;
+    int status;
     
     cout << "Start " << __PRETTY_FUNCTION__ << endl << flush;
     // Synchronization barrier (waiting that all tasks are started)
@@ -634,16 +608,16 @@ void Tasks::ServerTask(void *arg) {
         rt_sem_p(&sem_server, TM_INFINITE);
 
         rt_mutex_acquire(&mutex_monitor, TM_INFINITE);
-        statut = monitor.Open(SERVER_PORT);
+        status = monitor.Open(SERVER_PORT);
         rt_mutex_release(&mutex_monitor);
 
-        if (statut < 0) 
+        if (status < 0) 
             throw std::runtime_error {"Unable to start server on port " + std::to_string(SERVER_PORT)};
         else 
-            cout << "Open the server on the port " << (SERVER_PORT) << " (" << statut << ")" << endl;
+            cout << "Open server on port " << (SERVER_PORT) << " (" << status << ")" << endl;
         
         monitor.AcceptClient(); 
-        cout << "Client accepted!" << endl << flush;
+        cout << "Rock'n'Roll baby, client accepted!d!" << endl << flush;
         
         sConnect = 1;
         rt_sem_broadcast(&sem_serverOk);

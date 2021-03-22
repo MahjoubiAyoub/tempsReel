@@ -80,7 +80,6 @@ private:
     RT_TASK th_getBatteryLevel;
     RT_TASK th_startRobotWD;
     RT_TASK th_pingRobot;
-    RT_TASK th_sendToRobot;
     
     /**********************************************************************/
     /* Mutex                                                              */
@@ -173,7 +172,10 @@ private:
     Message* SendToRobot(Message *message);
 
     // Camera
-    void CameraTask(void *arg);
+    //void CameraTask(Message *arg);
+
+    // ServerTask
+    void ServerTask(void *arg);
 };
 
 #endif // __TASKS_H__ 

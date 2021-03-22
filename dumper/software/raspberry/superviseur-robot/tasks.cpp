@@ -144,11 +144,7 @@ void Tasks::Init() {
         cerr << "Error task create: " << strerror(-err) << endl << flush;
         exit(EXIT_FAILURE);
     }
-    // Thread for the send to Robot
-    if (err = rt_task_create(&th_sendToRobot, "th_sendToRobot", 0, PRIORITY_TSTARTROBOT, 0)) {
-        cerr << "Error task create: " << strerror(-err) << endl << flush;
-        exit(EXIT_FAILURE);
-    }
+    
     cout << "Tasks created successfully" << endl << flush;
 
     /**************************************************************************************/
@@ -200,16 +196,6 @@ void Tasks::Run() {
     }
     // Thread for watchwithdog
     if (err = rt_task_start(&th_startRobotWD, (void(*)(void*)) & Tasks::StartRobotTaskWD, this)) {
-        cerr << "Error task start: " << strerror(-err) << endl << flush;
-        exit(EXIT_FAILURE);
-    }
-    // Thread for the ping
-    if (err = rt_task_start(&th_startRobotWD, (void(*)(void*)) & Tasks::StartRobotTaskWD, this)) {
-        cerr << "Error task start: " << strerror(-err) << endl << flush;
-        exit(EXIT_FAILURE);
-    }
-    // Thread for the send to Robot  // Message* Tasks::SendToRobot(Message *message)
-    if (err = rt_task_start(&th_sendToRobot, (void(*)(void*)) & Tasks::SendToRobot, this)) {
         cerr << "Error task start: " << strerror(-err) << endl << flush;
         exit(EXIT_FAILURE);
     }
@@ -313,7 +299,9 @@ void Tasks::ReceiveFromMonTask(void *arg) {
             rt_sem_v(&sem_startRobot);
         } else if (msgRcv->CompareID(MESSAGE_ROBOT_START_WITH_WD)) {
             rt_sem_v(&sem_startRobotWD);
-        } else if (msgRcv->CompareID(MESSAGE_CAM_OPEN)) {
+        }
+        // Camera ToDo
+        else if (msgRcv->CompareID(MESSAGE_CAM_OPEN)) {
             // rt_sem_v(&sem_startRobot);
             cam = new Camera(sm, 20);
             if (cam->Open()) {
@@ -566,6 +554,7 @@ Message* Tasks::SendToRobot(Message *message) {
     // Le compteur des erreurs
     static int compteur = 1;
 
+    cout << "Start " << __PRETTY_FUNCTION__ << endl << flush;
     rt_mutex_acquire(&mutex_robot, TM_INFINITE);
     messageReceive = robot.Write(message->Copy());
     
@@ -594,35 +583,65 @@ Message* Tasks::SendToRobot(Message *message) {
 
     return messageReceive;
 }
-
+/*
 // Camera
-void Tasks::CameraTask(void *image) {
+void Tasks::CameraTask(Message *image) {
 
     cout << "Start " << __PRETTY_FUNCTION__ << endl << flush;
     // Synchronization barrier (waiting that all tasks are starting)
     rt_sem_p(&sem_barrier, TM_INFINITE);
     
-    /**************************************************************************************/
-    /* The task starts here                                                               */
-    /**************************************************************************************/
 
-    Img * img = new Img(cam.Grab());
+
+    Img * img = new Img(cam->Grab());
 
     while(true) {
-        if (cam != IsOpen()){
+        if (cam != NULL){
             // envoi image
             rt_task_wait_period(NULL);
 
             cout << "Image of superviseur to Monitor (";
             rt_mutex_acquire(&mutex_monitor, TM_INFINITE);
-            img = monitor.Write(image->Copy());
+            img = monitor.Write(img->ToString());
             rt_mutex_release(&mutex_monitor);
             cout << ")" << endl;
 
-            /* code */
-            cout << "Battery level answer: " << img->ToString() << endl << flush;
+            
+            cout << "Image answer: " << img->ToString() << endl << flush;
             // Vider les bufers et Envoyer au monitor
-            WriteInQueue(&q_messageToMon, img);
+            WriteInQueue(&q_messageToMon, image);
         }
+    }
+}
+*/
+
+// 
+void Tasks::ServerTask(void *arg) {
+    int statut;
+    
+    cout << "Start " << __PRETTY_FUNCTION__ << endl << flush;
+    // Synchronization barrier (waiting that all tasks are started)
+    rt_sem_p(&sem_barrier, TM_INFINITE);
+
+    /**************************************************************************************/
+    /* The task server starts here                                                        */
+    /**************************************************************************************/
+    while (true) {
+        rt_sem_p(&sem_server, TM_INFINITE);
+
+        rt_mutex_acquire(&mutex_monitor, TM_INFINITE);
+        statut = monitor.Open(SERVER_PORT);
+        rt_mutex_release(&mutex_monitor);
+
+        if (statut < 0) 
+            throw std::runtime_error {"Unable to start server on port " + std::to_string(SERVER_PORT)};
+        else 
+            cout << "Open the server on the port " << (SERVER_PORT) << " (" << statut << ")" << endl;
+        
+        monitor.AcceptClient(); 
+        cout << "Client accepted!" << endl << flush;
+        
+        monConnected = 1;
+        rt_sem_broadcast(&sem_serverOk);
     }
 }

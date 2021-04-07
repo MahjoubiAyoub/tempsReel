@@ -616,7 +616,62 @@ Message* Tasks::SendToRobot(Message *message) {
 // Camera
 void Tasks::CameraTask(void *args) {
     
+    Message *msgSend;
+    Camera *cam;
+    ImageMat temp;
+    Img image(temp);
+    int cameraLocal;
+    cam = new Camera(xs, 10);
 
+    /**************************************************************************************/
+    /* The task Vision starts here                                                    */
+    /**************************************************************************************/
+    while (1) {      
+        // For open the camera       
+        rt_sem_p(&sem_camera, TM_INFINITE);
+
+        rt_mutex_acquire(&mutex_camera, TM_INFINITE);
+        cameraLocal = camera;
+        rt_mutex_release(&mutex_camera);
+        if (cameraLocal == 1) {
+            cam->Open();
+            if (cam->IsOpen() == 0) { 
+                // Problème dans l'ouverture de la camera
+                cout << "Problem dans l'ouverture de la camera" << endl << flush;
+                WriteInQueue(&q_messageToMon,new Message(MESSAGE_ANSWER_NACK));
+            } else { 
+                // la camera est ouvert
+                cout << "Camera is open" << endl << flush;
+                WriteInQueue(&q_messageToMon,new Message(MESSAGE_ANSWER_ACK));
+                rt_task_set_periodic(NULL, TM_NOW, 500000000);
+                while (1) {
+                    
+                    rt_mutex_acquire(&mutex_camera, TM_INFINITE);
+                    cameraLocal = camera;
+                    rt_mutex_release(&mutex_camera);
+
+                    if (cameraLocal == 0) {
+                        cam->Close();
+                        delete cam;
+                        cout << "Camera closing, unrestartable : " << endl << flush;
+                        rt_task_delete(&th_camera);
+                    } else {
+                        
+                        rt_task_wait_period(NULL);
+                        cout << "Update for he image" << endl << flush;
+                        image =cam->Grab();
+
+                        // pour envoyer le message
+                        cout << "Sending the image" << endl << flush;
+                        MessageImg *msgImg = new MessageImg(MESSAGE_CAM_IMAGE, &image);
+                        WriteInQueue(&q_messageToMon,msgImg);                        
+                    }            
+                }            
+            }
+            delete(msgSend);
+            delete(cam);
+        }
+    }
 }
 
 // 

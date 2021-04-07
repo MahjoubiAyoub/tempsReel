@@ -351,10 +351,8 @@ void Tasks::ReceiveFromMonTask(void *arg) {
             rt_mutex_release(&mutex_move);
         }
         //OpenCamera and CloseCamera
-         else if (msgRcv->CompareID(MESSAGE_CAM_OPEN) || 
-                msgRcv->CompareID(MESSAGE_CAM_CLOSE) ||
-                msgRcv->CompareID(MESSAGE_CAM_POSITION_COMPUTE_START) ||
-                msgRcv->CompareID(MESSAGE_CAM_POSITION_COMPUTE_STOP)) {
+        else if (msgRcv->CompareID(MESSAGE_CAM_OPEN) || 
+                msgRcv->CompareID(MESSAGE_CAM_CLOSE)) {
 
             if (msgRcv->CompareID(MESSAGE_CAM_OPEN)) {
                 rt_mutex_acquire(&mutex_camera, TM_INFINITE);
@@ -374,7 +372,7 @@ void Tasks::ReceiveFromMonTask(void *arg) {
                 rt_mutex_release(&mutex_camera);
             }
             rt_sem_v(&sem_camera);
-         }
+        }
         delete(msgRcv);
     }
 }
@@ -563,8 +561,7 @@ void Tasks::getBatteryLevel(void *arg) {
             
             cout << "Battery level answer: " << batteryLevel->ToString() << endl << flush;
             // Vider les bufers et Envoyer au monitor
-            WriteInQueue(&q_messageToMon, batteryLevel);
-             
+            WriteInQueue(&q_messageToMon, batteryLevel); 
         }
     }
 }

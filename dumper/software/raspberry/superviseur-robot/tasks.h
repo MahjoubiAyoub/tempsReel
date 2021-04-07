@@ -66,9 +66,8 @@ private:
     ComRobot robot;
     int robotStarted = 0;
     int move = MESSAGE_ROBOT_STOP;
-    Camera *cam;
     int sConnect = 0;
-    int cameraCmd = MESSAGE_CAM_CLOSE;
+    int camera = 0;
     
     /**********************************************************************/
     /* Tasks                                                              */
@@ -83,6 +82,7 @@ private:
     RT_TASK th_startRobotWD;
     RT_TASK th_pingRobot;    
     RT_TASK th_camera;
+    RT_TASK th_lostComMonSuper; 
 
     
     /**********************************************************************/
@@ -107,6 +107,7 @@ private:
     RT_SEM sem_startRobotWD;
     RT_SEM sem_server;    
     RT_SEM sem_camera;
+    RT_SEM sem_lostComMonSuper;
 
 
     /**********************************************************************/
@@ -114,6 +115,7 @@ private:
     /**********************************************************************/
     int MSG_QUEUE_SIZE;
     RT_QUEUE q_messageToMon;
+    RT_QUEUE q_messageToRobot;
     
     /**********************************************************************/
     /* Tasks' functions                                                   */
@@ -187,6 +189,12 @@ private:
 
     // ServerTask
     void ServerTask(void *arg);
+    
+    // La communication entre le Monitor et le Superviseur
+    void LostComBetweenMonSuperTask(void *args);
+    
+    // La communication entre le Robot et le Superviseur
+    void LostComBetweenRobSuperTask(void *args);
 };
 
 #endif // __TASKS_H__ 

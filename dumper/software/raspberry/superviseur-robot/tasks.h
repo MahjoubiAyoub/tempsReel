@@ -68,6 +68,8 @@ private:
     int move = MESSAGE_ROBOT_STOP;
     int sConnect = 0;
     int camera = 0;
+    // Variable egale à 0 si on est en mode start without watchdog, sinon 1
+    int withWd = 0; 
     
     /**********************************************************************/
     /* Tasks                                                              */
@@ -94,7 +96,7 @@ private:
     RT_MUTEX mutex_move;    
     RT_MUTEX mutex_camera;    
     RT_MUTEX mutex_cameraCmd;
-
+    RT_MUTEX mutex_withWd;
 
 
     /**********************************************************************/

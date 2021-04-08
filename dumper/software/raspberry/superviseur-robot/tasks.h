@@ -66,8 +66,10 @@ private:
     ComRobot robot;
     int robotStarted = 0;
     int move = MESSAGE_ROBOT_STOP;
-    Camera *cam;
     int sConnect = 0;
+    int camera = 0;
+    // Variable egale à 0 si on est en mode start without watchdog, sinon 1
+    int withWd = 0; 
     
     /**********************************************************************/
     /* Tasks                                                              */
@@ -80,7 +82,11 @@ private:
     RT_TASK th_move;
     RT_TASK th_getBatteryLevel;
     RT_TASK th_startRobotWD;
-    RT_TASK th_pingRobot;
+    RT_TASK th_pingRobot;    
+    RT_TASK th_camera;
+    RT_TASK th_lostComMonSuper;
+    RT_TASK th_lostComRobSuper; 
+
     
     /**********************************************************************/
     /* Mutex                                                              */
@@ -88,7 +94,11 @@ private:
     RT_MUTEX mutex_monitor;
     RT_MUTEX mutex_robot;
     RT_MUTEX mutex_robotStarted;
-    RT_MUTEX mutex_move;
+    RT_MUTEX mutex_move;    
+    RT_MUTEX mutex_camera;    
+    RT_MUTEX mutex_cameraCmd;
+    RT_MUTEX mutex_withWd;
+
 
     /**********************************************************************/
     /* Semaphores                                                         */
@@ -98,13 +108,17 @@ private:
     RT_SEM sem_serverOk;
     RT_SEM sem_startRobot;
     RT_SEM sem_startRobotWD;
-    RT_SEM sem_server;
+    RT_SEM sem_server;    
+    RT_SEM sem_camera;
+    RT_SEM sem_lostComMonSuper;
+
 
     /**********************************************************************/
     /* Message queues                                                     */
     /**********************************************************************/
     int MSG_QUEUE_SIZE;
     RT_QUEUE q_messageToMon;
+    RT_QUEUE q_messageToRobot;
     
     /**********************************************************************/
     /* Tasks' functions                                                   */
@@ -174,10 +188,16 @@ private:
     Message* SendToRobot(Message *message);
 
     // Camera
-    void CameraTask(Message *arg);
+    void CameraTask(void *arg);
 
     // ServerTask
     void ServerTask(void *arg);
+    
+    // La communication entre le Monitor et le Superviseur
+    void LostComBetweenMonSuperTask(void *args);
+    
+    // La communication entre le Robot et le Superviseur
+    void LostComBetweenRobSuperTask(void *args);
 };
 
 #endif // __TASKS_H__ 
